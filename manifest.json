@@ -1,6 +1,6 @@
 {
   "name": "这个价，值不值",
-  "short_name": "值不值",
+  "short_name": "这个价，值不值",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#fff9ef",
@@ -10,3 +10,4 @@
     { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
+
