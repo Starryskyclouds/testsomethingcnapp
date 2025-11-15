@@ -2,12 +2,50 @@
 <html lang="zh-CN">
 <head>
   <link rel="manifest" href="./manifest.json">
-<meta name="theme-color" content="#3f86a5">
+  <meta name="theme-color" content="#3f86a5">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
   <title>这个价，值不值 — Worth It Or Not</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+/* 左栏三行布局：顶部店名/商品名，中间日期，底部 容量 + 单位价 */
+.prod-left > .prod-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* 允许内部元素 shrink，防止撑到右侧 */
+}
+.prod-top {
+  font-weight:700;
+  font-size:15px;
+  color: var(--accent-2);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.prod-mid {
+  font-size:13px;
+  color:#6b6b6b;
+  margin-top:6px;
+}
+.prod-bottom {
+  font-size:12px;
+  color:#6b6b6b;
+  margin-top:8px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.prod-price-wrap {
+  /* 确保右侧价格列固定并垂直居中 */
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  justify-content:center;
+  min-width:96px;
+  padding-left:8px;
+}
     :root{
       --bg:#fff9ef;
       --board:#fff8ed;
@@ -21,7 +59,7 @@
     header{display:flex;align-items:flex-start;justify-content:space-between}
     h1{font-size:25px;color:var(--accent);line-height:0.9;font-weight:550}
     .subtitle{color:var(--accent);opacity:0.85;font-size:20px;margin-top:6px}
-    .board-wrap{margin-top:10px;background:linear-gradient(#fffaf2,#fff7ec);border-radius:34px;padding:18px;border:4px solid #00000088;box-shadow:18px 18px 0 rgba(63,134,165,0.9);}
+    .board-wrap{margin-top:10px;background:linear-gradient(#fffaf2,#fff7ec);border-radius:34px;padding:18px;border:4px solid #00000088;box-shadow:18px 18px 0 rgba(63,134,165,0.9);;}
     .shops-grid{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start}
     .shop-pill{width:88px;height:88px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:transparent}
     .shop-icon{width:64px;height:64px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:32px;border:6px solid rgba(255,255,255,0.6)}
@@ -34,7 +72,7 @@
     .tag-pill{display:inline-flex;align-items:center;justify-content:center;height:40px;min-width:96px;padding:0 12px;border-radius:999px;border:4px solid var(--accent-2);background:var(--board);color:var(--accent);font-weight:700;font-size:14px;white-space:nowrap;flex:0 0 auto;box-sizing:border-box;}
     .result-area{margin-top:16px;background:var(--accent);border-radius:24px;padding:18px;min-height:320px;color:white}
     .product-card{background:var(--board);border-radius:18px;padding:14px;display:flex;align-items:center;justify-content:space-between;color:var(--accent-2);box-shadow: inset 0 -6px 0 rgba(0,0,0,0.04);}
-    .prod-left{display:flex;gap:12px;align-items:center}
+    .prod-left{display:flex;gap:12px;align-items:center;min-width:0}
     .prod-icon{width:64px;height:64px;border-radius:999px;border:6px solid rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;font-weight:700}
     .prod-meta{font-weight:700}
     .prod-extra{font-size:13px;color:var(--muted);margin-top:2px}
@@ -93,15 +131,13 @@
     ];
 
     function uid(prefix='id'){return prefix+Math.random().toString(36).slice(2,9)}
-    function today(){ const d=new Date(); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
+    function today(){ const d=new Date(); return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear(); }
 
     const modalRoot = document.getElementById('modalRoot');
     let state = loadData(); if(!state.products) state.products = {};
     if(!state.shops) state.shops = [];
 
     // ---------- helpers for unit conversion & unit price ----------
-    // 支持单位： g, kg, ml, l
-    // convertToBase 返回 {amount: Number, baseUnit: 'g'|'ml'|null}
     function convertToBase(capVal, capUnit){
       if(capVal === null || capVal === undefined) return {amount: null, baseUnit: null};
       const v = parseFloat(String(capVal).replace(/,/g,''));
@@ -114,13 +150,11 @@
       return {amount: null, baseUnit: null};
     }
 
-    // getUnitPrice(product) -> { value: Number|null, baseUnit: 'g'|'ml'|null, label: string|null }
     function getUnitPrice(prod){
       if(!prod) return {value:null, baseUnit:null, label:null};
       const {amount, baseUnit} = convertToBase(prod.capacityVal, prod.capacityUnit);
       if(!amount || !baseUnit) return {value:null, baseUnit:null, label:null};
       const val = (Number(prod.price)||0) / amount; // RM per baseUnit
-      // 格式化保留 5 位小数以内显示合适的位数
       const disp = val >= 0.1 ? val.toFixed(2) : val >= 0.01 ? val.toFixed(3) : val >= 0.001 ? val.toFixed(4) : val.toFixed(5);
       return { value: val, baseUnit, label: `RM${disp} / ${baseUnit}` };
     }
@@ -172,7 +206,7 @@
     </div>`);
       const grid = document.getElementById('editColorGrid'); let picked = shop.color; COLORS.forEach(c=>{ const s=document.createElement('button'); s.className='color-swatch'; s.style.background=c; if(c===shop.color) s.style.outline='3px solid rgba(0,0,0,0.12)'; s.addEventListener('click',()=>{ picked=c; document.querySelectorAll('#editColorGrid .color-swatch').forEach(x=>x.style.outline='none'); s.style.outline='3px solid rgba(0,0,0,0.12)'; }); grid.appendChild(s); });
       document.getElementById('saveShopBtn').addEventListener('click', ()=>{ const nm = document.getElementById('editName').value.trim(); if(!nm){ alert('名称不能为空'); return; } shop.name = nm; shop.color = picked; saveData(); renderShops(); renderTags(); closeModal(); });
-      document.getElementById('delShopBtn').addEventListener('click', ()=>{ if(confirm('确认删除该商店及其所有商品？')){ state.shops = state.shops.filter(s=>s.id!==id); for(const k in state.products) if(state.products[k].shopId===id) delete state.products[k]; saveData(); renderShops(); renderTags(); renderResults(); closeModal(); }});
+      document.getElementById('delShopBtn').addEventListener('click', ()=>{ if(confirm('确认删除该商店及其所有商品？')){ state.shops = state.shops.filter(s=>s.id!==id); for(const k in state.products) if(state.products[k].shopId===id) delete state.products[k]; saveData(); renderShops(); renderTags(); renderResults(); closeModal(); }}); 
     }
 
     function openShopPage(shopId){ const shop = state.shops.find(s=>s.id===shopId); if(!shop) return;
@@ -197,21 +231,22 @@
       prods.forEach(p=>{
         const div=document.createElement('div'); div.className='product-card'; div.style.marginBottom='12px';
         const unitInfo = getUnitPrice(p);
-        const unitHtml = unitInfo.label ? `<div style="font-size:12px;color:${'#6b6b6b'};margin-top:4px">${unitInfo.label}</div>` : '';
-        div.innerHTML = `<div class='prod-left'>
-          <div class='prod-icon' style='background:${getShopColor(shopId)};color:${getContrastColor(getShopColor(shopId))}'>${escapeHtml(getShopInitial(shopId))}</div>
-          <div>
-            <div class='prod-meta'>${escapeHtml(p.name)}</div>
-            <div class='prod-extra'>${escapeHtml(p.date||'')} · ${p.capacityVal?escapeHtml(p.capacityVal+' '+p.capacityUnit):''}</div>
-            <div style='margin-top:8px'>${(p.tags||[]).map(t=>`<span class='tag-pill' style='background:var(--board);border:4px solid var(--accent-2);margin-right:6px'>${escapeHtml(t)}</span>`).join('')}</div>
-            ${unitHtml}
-          </div>
-        </div>
-        <div style='text-align:right'>
-          <div class='prod-price'>RM ${Number(p.price).toFixed(2)}</div>
-          <div style='margin-top:10px'><button class='btn btn-alt' data-id='${p.id}' data-action='edit'>编辑</button></div>
-          <div style='font-size:12px;color:var(--muted);margin-top:6px;cursor:pointer' data-action='details' data-id='${p.id}'>更多细节</div>
-        </div>`;
+        // 安全地准备单位价文字（先转义文本，再放入内联标签）
+        const unitLabel = unitInfo.label ? escapeHtml(unitInfo.label) : '';
+        div.innerHTML = `
+  <div class='prod-left'>
+    <div class='prod-icon' style='background:${getShopColor(shopId)};color:${getContrastColor(getShopColor(shopId))}'>${escapeHtml(getShopInitial(shopId))}</div>
+    <div class='prod-text' style='margin-left:8px;min-width:0'>
+      <div class='prod-top'>${escapeHtml(p.name)}</div>
+      <div class='prod-mid'>${escapeHtml(p.date||'')}</div>
+      <div class='prod-bottom'>${p.capacityVal ? escapeHtml(p.capacityVal+' '+p.capacityUnit) : ''}${unitLabel ? ' · <span style="font-size:12px;color:#6b6b6b;margin-top:4px">' + unitLabel + '</span>' : ''}</div>
+    </div>
+  </div>
+  <div class='prod-price-wrap'>
+    <div class='prod-price'>RM ${Number(p.price).toFixed(2)}</div>
+    <div style='margin-top:8px'><button class='btn btn-alt' data-id='${p.id}' data-action='edit'>编辑</button></div>
+    <div style='font-size:12px;color:var(--muted);margin-top:6px;cursor:pointer' data-action='details' data-id='${p.id}'>更多细节</div>
+  </div>`;
         wrap.appendChild(div);
       });
       wrap.querySelectorAll('[data-action="edit"]').forEach(btn=>btn.addEventListener('click', (e)=> openEditProductModal(e.target.dataset.id)));
@@ -331,7 +366,6 @@
       });
 
       matchedProducts.sort((a,b) => {
-        // 如果在分组里使用的排序需要按单位价排序，会在 renderGroupedResults 内做更精细的决定
         return (Number(a.price)||0) - (Number(b.price)||0);
       });
 
@@ -345,16 +379,13 @@
       list.forEach(p=>{ const k = (p.name||'').toLowerCase(); (groups[k] = groups[k]||[]).push(p); });
       Object.values(groups).forEach(arr=>{ 
         const title = document.createElement('div'); title.style.color = '#f6fbfe';
- title.style.fontWeight='700'; title.style.marginTop='8px'; title.style.marginBottom='8px'; title.textContent = arr[0].name; wrap.appendChild(title);
+        title.style.fontWeight='700'; title.style.marginTop='8px'; title.style.marginBottom='8px'; title.textContent = arr[0].name; wrap.appendChild(title);
 
-        // 决定该组是否用单位价排序：收集中有单位价的条目的 baseUnit 集合
         const baseUnits = new Set(arr.map(p=> getUnitPrice(p).baseUnit).filter(Boolean));
         let useUnitSort = false;
-        let commonUnit = null;
-        if(baseUnits.size === 1){ useUnitSort = true; commonUnit = Array.from(baseUnits)[0]; }
+        if(baseUnits.size === 1){ useUnitSort = true; }
 
         if(useUnitSort){
-          // 若有共同基准单位（例如全部是 ml 或 全部是 g），按单位价格排序（无单位价的视为+Infinity）
           arr.sort((a,b)=>{
             const ua = getUnitPrice(a).value; const ub = getUnitPrice(b).value;
             const va = (ua==null)? Infinity : ua;
@@ -362,24 +393,27 @@
             return va - vb;
           });
         } else {
-          // 回退：按总价排序
           arr.sort((a,b)=> (Number(a.price)||0) - (Number(b.price)||0));
         }
 
         arr.forEach(p=>{
           const unitInfo = getUnitPrice(p);
-          const unitHtml = unitInfo.label ? `<div style="font-size:12px;color:#6b6b6b;margin-top:6px">${unitInfo.label}</div>` : '';
+          const unitLabel = unitInfo.label ? escapeHtml(unitInfo.label) : '';
           const el = document.createElement('div'); el.className='product-card'; el.style.marginBottom='10px';
-          el.innerHTML = `<div class='prod-left'>
-            <div class='prod-icon' style='background:${getShopColor(p.shopId)};color:${getContrastColor(getShopColor(p.shopId))}'>${escapeHtml(getShopInitial(p.shopId))}</div>
-            <div class='prod-meta' style='color:var(--accent-2)'>${escapeHtml(getShopName(p.shopId))}</div>
-            <div class='prod-extra'>${escapeHtml(p.date||'')} · ${p.capacityVal?escapeHtml(p.capacityVal+' '+p.capacityUnit):''}</div>
-            ${unitHtml}</div>
-          </div>
-          <div style='text-align:right'>
-            <div class='prod-price' style='color:var(--accent-2);font-weight:800'>RM ${Number(p.price).toFixed(2)}</div>
-            <div style='margin-top:8px;font-size:12px;color:#6b6b6b;cursor:pointer' data-action='details' data-id='${p.id}'>更多细节</div>
-          </div>`;
+          el.innerHTML = `
+  <div class='prod-left'>
+    <div class='prod-icon' style='background:${getShopColor(p.shopId)};color:${getContrastColor(getShopColor(p.shopId))}'>${escapeHtml(getShopInitial(p.shopId))}</div>
+    <div class='prod-text' style='margin-left:8px;min-width:0'>
+      <div class='prod-top'>${escapeHtml(getShopName(p.shopId))}</div>
+      <div class='prod-mid'>${escapeHtml(p.date||'')}</div>
+      <div class='prod-bottom'>${p.capacityVal ? escapeHtml(p.capacityVal+' '+p.capacityUnit) : ''}${unitLabel ? ' · <span style="font-size:12px;color:#6b6b6b;margin-top:6px">' + unitLabel + '</span>' : ''}</div>
+    </div>
+  </div>
+  <div class='prod-price-wrap'>
+    <div class='prod-price' style='color:var(--accent-2);font-weight:800'>RM ${Number(p.price).toFixed(2)}</div>
+    <div style='margin-top:8px;font-size:12px;color:#6b6b6b;cursor:pointer' data-action='details' data-id='${p.id}'>更多细节</div>
+  </div>
+`;
           wrap.appendChild(el);
           el.querySelectorAll('[data-action="details"]').forEach(btn=> btn.addEventListener('click', (e)=> showHistoryModal(e.target.dataset.id)));
         });
